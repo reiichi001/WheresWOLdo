@@ -1,16 +1,19 @@
-﻿using Dalamud.Plugin;
+﻿using Dalamud.Configuration;
+using Dalamud.Data;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.Command;
+using Dalamud.IoC;
+using Dalamud.Plugin;
 using ImGuiNET;
-using Dalamud.Configuration;
 using Num = System.Numerics;
 using Lumina.Excel.GeneratedSheets;
 using System;
 
-namespace WOLdo
+namespace WheresWOLdo
 {
-    public class WOLdo : IDalamudPlugin
+    public class WheresWOLdo : IDalamudPlugin
     {
         public string Name => "WOLdo";
-        private DalamudPluginInterface _pi;
         private Config _configuration;
         private string _location = "";
         private bool _enabled = true;
@@ -24,29 +27,32 @@ namespace WOLdo
         private float _adjustX;
         private bool _first = true;
 
-        public void Initialize(DalamudPluginInterface pi)
-        {
+        [PluginService] public static ClientState ClientState { get; private set; }
+        [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
+        [PluginService] public static DataManager Data { get; private set; }
+        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
 
-            _pi = pi;
-            _configuration = pi.GetPluginConfig() as Config ?? new Config();
+        public WheresWOLdo()
+        {
+            _configuration = PluginInterface.GetPluginConfig() as Config ?? new Config();
             _col = _configuration.Col;
             _noMove = _configuration.NoMove;
             _scale = _configuration.Scale;
             _enabled = _configuration.Enabled;
             _align = _configuration.Align;
-            _terr = pi.Data.GetExcelSheet<TerritoryType>();
+            _terr = Data.GetExcelSheet<TerritoryType>();
+            PluginInterface.UiBuilder.Draw += DrawWindow;
 
-            _pi.UiBuilder.OnBuildUi += DrawWindow;
-
-            _pi.CommandManager.AddHandler("/woldo", new Dalamud.Game.Command.CommandInfo(Command)
+            CommandManager.AddHandler("/woldo", new CommandInfo(Command)
             {
                 HelpMessage = "Where's WOLdo config."
             });
         }
+
         public void Dispose()
         {
-            _pi.UiBuilder.OnBuildUi -= DrawWindow;
-            _pi.CommandManager.RemoveHandler("/woldo");
+            PluginInterface.UiBuilder.Draw -= DrawWindow;
+            CommandManager.RemoveHandler("/woldo");
             _terr = null;
         }
 
@@ -57,7 +63,6 @@ namespace WOLdo
 
         private void DrawWindow()
         {
-
             ImGuiWindowFlags windowFlags = 0;
             windowFlags |= ImGuiWindowFlags.NoTitleBar;
             windowFlags |= ImGuiWindowFlags.NoScrollbar;
@@ -77,7 +82,6 @@ namespace WOLdo
 
             if (_config)
             {
-                
                 ImGui.SetNextWindowSize(new Num.Vector2(200, 160), ImGuiCond.FirstUseEver);
                 ImGui.Begin("Where's WOLdo Config", ref _config, ImGuiWindowFlags.AlwaysAutoResize);
                 ImGui.Checkbox("Enabled", ref _enabled);
@@ -96,20 +100,17 @@ namespace WOLdo
             }
 
             _location = "";
-            if (_pi.ClientState.LocalPlayer != null)
+            if (ClientState.LocalPlayer != null)
             {
                 _location = "Uhoh";
                 try
                 {
-                    _location = _terr.GetRow(_pi.ClientState.TerritoryType).PlaceName.Value.Name;
+                    _location = _terr.GetRow(ClientState.TerritoryType).PlaceName.Value.Name;
                 }
-
                 catch (Exception)
                 {
                     _location = "Change zone to load";
                 }
-                
-                            
             }
 
 
@@ -161,7 +162,6 @@ namespace WOLdo
                     }
                     else
                     {
-
                         ImGui.SetWindowPos(new Num.Vector2(ImGui.GetWindowPos().X - _adjustX, ImGui.GetWindowPos().Y));
                     }
                             
@@ -181,7 +181,7 @@ namespace WOLdo
             _configuration.Scale = _scale;
             _configuration.NoMove = _noMove;
             _configuration.Align = _align;
-            _pi.SavePluginConfig(_configuration);
+            PluginInterface.SavePluginConfig(_configuration);
         }
     }
 
@@ -193,6 +193,5 @@ namespace WOLdo
         public float Scale { get; set; } = 1f;
         public bool NoMove { get; set; }
         public int Align { get; set; }
-
     }
 }
