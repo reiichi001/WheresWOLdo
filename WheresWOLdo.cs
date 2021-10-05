@@ -42,6 +42,7 @@ namespace WheresWOLdo
             _align = _configuration.Align;
             _terr = Data.GetExcelSheet<TerritoryType>();
             PluginInterface.UiBuilder.Draw += DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
             CommandManager.AddHandler("/woldo", new CommandInfo(Command)
             {
@@ -52,11 +53,17 @@ namespace WheresWOLdo
         public void Dispose()
         {
             PluginInterface.UiBuilder.Draw -= DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
             CommandManager.RemoveHandler("/woldo");
             _terr = null;
         }
 
         private void Command(string command, string arguments)
+        {
+            _config = true;
+        }
+        
+        private void OpenConfigUi()
         {
             _config = true;
         }
