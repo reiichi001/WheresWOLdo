@@ -4,20 +4,13 @@ using Dalamud.Configuration;
 using Num = System.Numerics;
 using Lumina.Excel.GeneratedSheets;
 using System;
-using Dalamud.Data;
-using Dalamud.Game.Command;
-using Dalamud.IoC;
-using Dalamud.Game.ClientState;
 
 namespace WOLdo
 {
     public class WOLdo : IDalamudPlugin
     {
         public string Name => "WOLdo";
-        [PluginService] public DalamudPluginInterface PluginInterface { get; private set; }
-        [PluginService] public ClientState State { get; private set; }
-        [PluginService] public static DataManager Data { get; private set; }
-        private CommandManager commandManager { get; init; }
+        private DalamudPluginInterface _pi;
         private Config _configuration;
         private string _location = "";
         private bool _enabled = true;
@@ -31,28 +24,29 @@ namespace WOLdo
         private float _adjustX;
         private bool _first = true;
 
-        public WOLdo(CommandManager commandManager)
+        public void Initialize(DalamudPluginInterface pi)
         {
-            _configuration = PluginInterface.GetPluginConfig() as Config ?? new Config();
+
+            _pi = pi;
+            _configuration = pi.GetPluginConfig() as Config ?? new Config();
             _col = _configuration.Col;
             _noMove = _configuration.NoMove;
             _scale = _configuration.Scale;
             _enabled = _configuration.Enabled;
             _align = _configuration.Align;
-            _terr = Data.GetExcelSheet<TerritoryType>();
+            _terr = pi.Data.GetExcelSheet<TerritoryType>();
 
-            PluginInterface.UiBuilder.Draw += DrawWindow;
+            _pi.UiBuilder.OnBuildUi += DrawWindow;
 
-            this.commandManager = commandManager;
-            this.commandManager.AddHandler("/woldo", new Dalamud.Game.Command.CommandInfo(Command)
+            _pi.CommandManager.AddHandler("/woldo", new Dalamud.Game.Command.CommandInfo(Command)
             {
                 HelpMessage = "Where's WOLdo config."
             });
         }
         public void Dispose()
         {
-            PluginInterface.UiBuilder.Draw -= DrawWindow;
-            commandManager.RemoveHandler("/woldo");
+            _pi.UiBuilder.OnBuildUi -= DrawWindow;
+            _pi.CommandManager.RemoveHandler("/woldo");
             _terr = null;
         }
 
@@ -102,12 +96,12 @@ namespace WOLdo
             }
 
             _location = "";
-            if (State.LocalPlayer != null)
+            if (_pi.ClientState.LocalPlayer != null)
             {
                 _location = "Uhoh";
                 try
                 {
-                    _location = _terr.GetRow(State.TerritoryType).PlaceName.Value.Name;
+                    _location = _terr.GetRow(_pi.ClientState.TerritoryType).PlaceName.Value.Name;
                 }
 
                 catch (Exception)
@@ -187,7 +181,7 @@ namespace WOLdo
             _configuration.Scale = _scale;
             _configuration.NoMove = _noMove;
             _configuration.Align = _align;
-            PluginInterface.SavePluginConfig(_configuration);
+            _pi.SavePluginConfig(_configuration);
         }
     }
 
