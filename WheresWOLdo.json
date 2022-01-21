@@ -1,0 +1,16 @@
+{
+	"Author": "Haplo064, modified by Franz",
+	"Name": "WOLdo",
+	"RepoUrl": "https://github.com/Haplo064/WheresWOLdo",
+	"Tags": [
+		"Location",
+		"UI",
+		"Overlay"
+	],
+	"CategoryTags": [
+		"UI"
+	],
+	"Punchline": "Making it easier to know where you are.",
+	"Description": "Movable text overlay of the current location name.",
+	"Changelog": "Updated for API5. Will be maintained by Franz now."
+}

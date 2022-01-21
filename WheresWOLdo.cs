@@ -8,16 +8,24 @@ using ImGuiNET;
 using Num = System.Numerics;
 using Lumina.Excel.GeneratedSheets;
 using System;
+using WheresWOLdo.Attributes;
+using Dalamud.Game.Gui;
 
 namespace WheresWOLdo
 {
     public class WheresWOLdo : IDalamudPlugin
     {
         public string Name => "WOLdo";
-        private Config _configuration;
+        private Configuration _configuration;
+        public PluginCommandManager<WheresWOLdo> CommandManager;
+
+        [PluginService] public static ClientState ClientState { get; private set; }
+        [PluginService] public static DataManager Data { get; private set; }
+        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
+        [PluginService] public static GameGui gameGui { get; private set; }
+
         private string _location = "";
-        private bool _enabled = true;
-        private Lumina.Excel.ExcelSheet<TerritoryType> _terr;
+        private bool _enabled;
         private float _scale = 1f;
         private ImColor _col = new ImColor { Value = new Num.Vector4(1f, 1f, 1f, 1f) };
         private bool _noMove;
@@ -26,15 +34,15 @@ namespace WheresWOLdo
         private int _align;
         private float _adjustX;
         private bool _first = true;
+        private Lumina.Excel.ExcelSheet<TerritoryType> _terr;
 
-        [PluginService] public static ClientState ClientState { get; private set; }
-        [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
-        [PluginService] public static DataManager Data { get; private set; }
-        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+        private readonly NativeUIUtil nui;
 
-        public WheresWOLdo()
+        public WheresWOLdo(CommandManager command)
         {
-            _configuration = PluginInterface.GetPluginConfig() as Config ?? new Config();
+            _configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            this._configuration.Initialize(PluginInterface, this);
+
             _col = _configuration.Col;
             _noMove = _configuration.NoMove;
             _scale = _configuration.Scale;
@@ -44,21 +52,14 @@ namespace WheresWOLdo
             PluginInterface.UiBuilder.Draw += DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-            CommandManager.AddHandler("/woldo", new CommandInfo(Command)
-            {
-                HelpMessage = "Where's WOLdo config."
-            });
+            nui = new NativeUIUtil(_configuration, gameGui);
+
+            this.CommandManager = new PluginCommandManager<WheresWOLdo>(this, command);
         }
 
-        public void Dispose()
-        {
-            PluginInterface.UiBuilder.Draw -= DrawWindow;
-            PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
-            CommandManager.RemoveHandler("/woldo");
-            _terr = null;
-        }
-
-        private void Command(string command, string arguments)
+        [Command("/woldo")]
+        [HelpMessage("Where's WOLdo config.")]
+        public void Command(string command, string arguments)
         {
             _config = true;
         }
@@ -70,6 +71,12 @@ namespace WheresWOLdo
 
         private void DrawWindow()
         {
+            if (_configuration.ShowLocationInNative)
+            {
+                UpdateNui();
+            }
+
+
             ImGuiWindowFlags windowFlags = 0;
             windowFlags |= ImGuiWindowFlags.NoTitleBar;
             windowFlags |= ImGuiWindowFlags.NoScrollbar;
@@ -90,17 +97,30 @@ namespace WheresWOLdo
             if (_config)
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(200, 160), ImGuiCond.FirstUseEver);
+
+                
                 ImGui.Begin("Where's WOLdo Config", ref _config, ImGuiWindowFlags.AlwaysAutoResize);
-                ImGui.Checkbox("Enabled", ref _enabled);
+                ImGui.Checkbox("Enable moveable location bar", ref _enabled);
                 ImGui.ColorEdit4("Colour", ref _col.Value, ImGuiColorEditFlags.NoInputs);
                 ImGui.InputFloat("Size", ref _scale);
                 ImGui.Checkbox("Locked", ref _noMove);
                 ImGui.Checkbox("Debug", ref _debug);
                 //ImGui.ListBox("Alignment", ref align, alignStr, 3);
+                var showNative = _configuration.ShowLocationInNative;
+                if (ImGui.Checkbox("Show current location in the \"server info\" UI element in-game", ref showNative))
+                {
+                    _configuration.ShowLocationInNative = showNative;
+                    _configuration.Save();
+                }
 
                 if (ImGui.Button("Save and Close Config"))
                 {
-                    SaveConfig();
+                    _configuration.Enabled = _enabled;
+                    _configuration.Col = _col;
+                    _configuration.Scale = _scale;
+                    _configuration.NoMove = _noMove;
+
+                    _configuration.Save();
                     _config = false;
                 }
                 ImGui.End();
@@ -181,24 +201,44 @@ namespace WheresWOLdo
 
         }
 
-        private void SaveConfig()
+        public void SetNativeDisplay(bool value)
         {
-            _configuration.Enabled = _enabled;
-            _configuration.Col = _col;
-            _configuration.Scale = _scale;
-            _configuration.NoMove = _noMove;
-            _configuration.Align = _align;
-            PluginInterface.SavePluginConfig(_configuration);
-        }
-    }
+            // Somehow it was set to the same value. This should not occur
+            if (value == _configuration.ShowLocationInNative) return;
 
-    public class Config : IPluginConfiguration
-    {
-        public int Version { get; set; } = 0;
-        public bool Enabled { get; set; } = true;
-        public ImColor Col { get; set; } = new ImColor { Value = new Num.Vector4(1f,1f,1f,1f) };
-        public float Scale { get; set; } = 1f;
-        public bool NoMove { get; set; }
-        public int Align { get; set; }
+            if (value)
+            {
+                nui.Init();
+                nui.Update(_location);
+            }
+            else
+                nui.Dispose();
+        }
+
+        private void UpdateNui()
+        {
+            if (!_configuration.ShowLocationInNative) return;
+
+            nui.Update(_location);
+        }
+
+        #region IDisposable Support
+        protected virtual void Dispose(bool disposing)
+        {
+            CommandManager.Dispose();
+            nui.Dispose();
+            PluginInterface.UiBuilder.Draw -= DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
+            _terr = null;
+
+            PluginInterface.SavePluginConfig(this._configuration);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
