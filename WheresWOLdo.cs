@@ -10,19 +10,22 @@ using Lumina.Excel.GeneratedSheets;
 using System;
 using WheresWOLdo.Attributes;
 using Dalamud.Game.Gui;
+using Dalamud.Game.Gui.Dtr;
 
 namespace WheresWOLdo
 {
     public class WheresWOLdo : IDalamudPlugin
     {
-        public string Name => "WOLdo";
+        private const string ConstName = "WOLdo";
+        public string Name => ConstName;
         private Configuration _configuration;
         public PluginCommandManager<WheresWOLdo> CommandManager;
 
         [PluginService] public static ClientState ClientState { get; private set; }
         [PluginService] public static DataManager Data { get; private set; }
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
-        [PluginService] public static GameGui gameGui { get; private set; }
+        [PluginService] public static DtrBar DtrBar { get; private set; }
+        private DtrBarEntry dtrEntry;
 
         private string _location = "";
         private bool _enabled;
@@ -35,8 +38,6 @@ namespace WheresWOLdo
         private float _adjustX;
         private bool _first = true;
         private Lumina.Excel.ExcelSheet<TerritoryType> _terr;
-
-        private readonly NativeUIUtil nui;
 
         public WheresWOLdo(CommandManager command)
         {
@@ -52,7 +53,10 @@ namespace WheresWOLdo
             PluginInterface.UiBuilder.Draw += DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-            nui = new NativeUIUtil(_configuration, gameGui);
+            if (_configuration.ShowLocationInNative)
+            {
+                dtrEntry = DtrBar.Get(ConstName);
+            }
 
             this.CommandManager = new PluginCommandManager<WheresWOLdo>(this, command);
         }
@@ -73,7 +77,7 @@ namespace WheresWOLdo
         {
             if (_configuration.ShowLocationInNative)
             {
-                UpdateNui();
+                UpdateDtrBarEntry();
             }
 
 
@@ -201,32 +205,32 @@ namespace WheresWOLdo
 
         }
 
-        public void SetNativeDisplay(bool value)
+        public void SetDtrBarEntry(bool value)
         {
             // Somehow it was set to the same value. This should not occur
             if (value == _configuration.ShowLocationInNative) return;
 
             if (value)
             {
-                nui.Init();
-                nui.Update(_location);
+                dtrEntry = DtrBar.Get(ConstName);
+                dtrEntry.Text = _location;
             }
             else
-                nui.Dispose();
+                dtrEntry.Dispose();
         }
 
-        private void UpdateNui()
+        private void UpdateDtrBarEntry()
         {
             if (!_configuration.ShowLocationInNative) return;
 
-            nui.Update(_location);
+            dtrEntry.Text = _location;
         }
 
         #region IDisposable Support
         protected virtual void Dispose(bool disposing)
         {
             CommandManager.Dispose();
-            nui.Dispose();
+            dtrEntry?.Dispose();
             PluginInterface.UiBuilder.Draw -= DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
             _terr = null;

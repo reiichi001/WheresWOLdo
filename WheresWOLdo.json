@@ -1,5 +1,5 @@
 {
-	"Author": "Haplo064, modified by Franz",
+	"Author": "Haplo064, maintained by Franz",
 	"Name": "WOLdo",
 	"RepoUrl": "https://github.com/reiichi001/WheresWOLdo",
 	"Tags": [
@@ -12,5 +12,5 @@
 	],
 	"Punchline": "Making it easier to know where you are.",
 	"Description": "Movable text overlay of the current location name.",
-	"Changelog": "Updated for API5. Will be maintained by Franz now."
+	"Changelog": "Uses Dalamud's shiny new DtrBar for native \"server info\" bar support."
 }

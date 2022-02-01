@@ -23,7 +23,7 @@ namespace WheresWOLdo
             get => showLocationInNative;
             set
             {
-                plugin.SetNativeDisplay(value);
+                plugin.SetDtrBarEntry(value);
                 showLocationInNative = value;
             }
         }
