@@ -11,6 +11,7 @@ using System;
 using WheresWOLdo.Attributes;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
+using Dalamud.Game;
 
 namespace WheresWOLdo
 {
@@ -24,6 +25,7 @@ namespace WheresWOLdo
         [PluginService] public static ClientState ClientState { get; private set; }
         [PluginService] public static DataManager Data { get; private set; }
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
+        [PluginService] public static Framework Framework { get; private set; } = null!;
         [PluginService] public static DtrBar DtrBar { get; private set; }
         private DtrBarEntry dtrEntry;
 
@@ -50,13 +52,11 @@ namespace WheresWOLdo
             _enabled = _configuration.Enabled;
             _align = _configuration.Align;
             _terr = Data.GetExcelSheet<TerritoryType>();
+            Framework.Update += OnFrameworkUpdate;
             PluginInterface.UiBuilder.Draw += DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-            if (_configuration.ShowLocationInNative)
-            {
-                dtrEntry = DtrBar.Get(ConstName);
-            }
+            
 
             this.CommandManager = new PluginCommandManager<WheresWOLdo>(this, command);
         }
@@ -73,12 +73,21 @@ namespace WheresWOLdo
             _config = true;
         }
 
-        private void DrawWindow()
+        private void OnFrameworkUpdate(Framework framework)
         {
             if (_configuration.ShowLocationInNative)
             {
+                dtrEntry ??= DtrBar.Get(ConstName);
+                dtrEntry.Shown = _configuration.ShowLocationInNative;
                 UpdateDtrBarEntry();
             }
+            else {
+                if (dtrEntry != null) dtrEntry.Shown = false;
+            }
+        }
+        private void DrawWindow()
+        {
+            
 
 
             ImGuiWindowFlags windowFlags = 0;
@@ -231,6 +240,7 @@ namespace WheresWOLdo
         {
             CommandManager.Dispose();
             dtrEntry?.Dispose();
+            Framework.Update -= OnFrameworkUpdate;
             PluginInterface.UiBuilder.Draw -= DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigUi;
             _terr = null;

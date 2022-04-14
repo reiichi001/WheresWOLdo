@@ -12,5 +12,4 @@
 	],
 	"Punchline": "Making it easier to know where you are.",
 	"Description": "Movable text overlay of the current location name.",
-	"Changelog": "Uses Dalamud's shiny new DtrBar for native \"server info\" bar support."
 }
