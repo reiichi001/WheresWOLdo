@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<AssemblyVersion>1.3.4.0</AssemblyVersion>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<AssemblyVersion>1.3.5.0</AssemblyVersion>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<PlatformTarget>x64</PlatformTarget>
 		<Platforms>x64;AnyCPU</Platforms>
-		<LangVersion>9.0</LangVersion>
+		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
@@ -14,7 +14,7 @@
 		<Authors>Haplo064</Authors>
 		<Company>Haplo064</Company>
 		<Product>WheresWOLdo</Product>
-		<Copyright>Copyright © 2022</Copyright>
+		<Copyright>Copyright © 2023</Copyright>
 		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 	</PropertyGroup>
 	<PropertyGroup>
@@ -51,7 +51,7 @@
 		</Reference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="DalamudPackager" Version="2.1.8" />
+		<PackageReference Include="DalamudPackager" Version="2.1.10" />
 	</ItemGroup>
 
 </Project>
