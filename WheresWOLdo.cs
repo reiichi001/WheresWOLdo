@@ -8,6 +8,7 @@ using ImGuiNET;
 using Num = System.Numerics;
 using Lumina.Excel.GeneratedSheets;
 using System;
+using System.Runtime.InteropServices;
 using WheresWOLdo.Attributes;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
@@ -27,7 +28,10 @@ namespace WheresWOLdo
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
         [PluginService] public static Framework Framework { get; private set; } = null!;
         [PluginService] public static DtrBar DtrBar { get; private set; }
+        [PluginService] public static SigScanner Scanner { get; private set; }
         private DtrBarEntry dtrEntry;
+
+        private readonly IntPtr _instanceNumberAddress;
 
         private string _location = "";
         private bool _enabled;
@@ -56,7 +60,8 @@ namespace WheresWOLdo
             PluginInterface.UiBuilder.Draw += DrawWindow;
             PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-            
+            // https://github.com/NadyaNayme/TidyChat/blob/9221f9659cfe6f989023121e4f88ebe59e07d877/TidyChat/TidyChat.cs#L492-L493
+            _instanceNumberAddress = Scanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 BD");
 
             this.CommandManager = new PluginCommandManager<WheresWOLdo>(this, command);
         }
@@ -146,6 +151,12 @@ namespace WheresWOLdo
                 try
                 {
                     _location = _terr.GetRow(ClientState.TerritoryType).PlaceName.Value.Name;
+
+                    int instanceNumber = Marshal.ReadByte(_instanceNumberAddress, 0x20);
+                    if (instanceNumber > 0)
+                    {
+                        _location += $" {instanceNumber}";
+                    }
                 }
                 catch (Exception)
                 {
