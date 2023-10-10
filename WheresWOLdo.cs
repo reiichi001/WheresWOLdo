@@ -12,6 +12,7 @@ using WheresWOLdo.Attributes;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game;
+using Dalamud.Plugin.Services;
 
 namespace WheresWOLdo
 {
@@ -22,11 +23,11 @@ namespace WheresWOLdo
         private Configuration _configuration;
         public PluginCommandManager<WheresWOLdo> CommandManager;
 
-        [PluginService] public static ClientState ClientState { get; private set; }
-        [PluginService] public static DataManager Data { get; private set; }
+        [PluginService] public static IClientState ClientState { get; private set; } = null!;
+        [PluginService] public static IDataManager Data { get; private set; } = null!;
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
-        [PluginService] public static Framework Framework { get; private set; } = null!;
-        [PluginService] public static DtrBar DtrBar { get; private set; }
+        [PluginService] public static IFramework Framework { get; private set; } = null!;
+        [PluginService] public static IDtrBar DtrBar { get; private set; } = null!;
         private DtrBarEntry dtrEntry;
 
         private string _location = "";
@@ -41,7 +42,7 @@ namespace WheresWOLdo
         private bool _first = true;
         private Lumina.Excel.ExcelSheet<TerritoryType> _terr;
 
-        public WheresWOLdo(CommandManager command)
+        public WheresWOLdo(ICommandManager command)
         {
             _configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this._configuration.Initialize(PluginInterface, this);
@@ -73,7 +74,7 @@ namespace WheresWOLdo
             _config = true;
         }
 
-        private void OnFrameworkUpdate(Framework framework)
+        private void OnFrameworkUpdate(IFramework framework)
         {
             if (_configuration.ShowLocationInNative)
             {
@@ -124,6 +125,8 @@ namespace WheresWOLdo
                 {
                     _configuration.ShowLocationInNative = showNative;
                     _configuration.Save();
+                    SetDtrBarEntry(showNative);
+                    dtrEntry.Shown = showNative;
                 }
 
                 if (ImGui.Button("Save and Close Config"))
@@ -221,11 +224,12 @@ namespace WheresWOLdo
 
             if (value)
             {
+                dtrEntry.Shown = true;
                 dtrEntry = DtrBar.Get(ConstName);
                 dtrEntry.Text = _location;
             }
             else
-                dtrEntry.Dispose();
+                dtrEntry.Shown = false;
         }
 
         private void UpdateDtrBarEntry()

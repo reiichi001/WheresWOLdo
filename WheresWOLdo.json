@@ -11,5 +11,5 @@
 		"UI"
 	],
 	"Punchline": "Making it easier to know where you are.",
-	"Description": "Movable text overlay of the current location name.",
+	"Description": "Movable text overlay of the current location name. Please consider migrationg to WhereAmIAgain, which is actively maintained and has more features.",
 }
